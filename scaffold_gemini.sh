@@ -3,7 +3,7 @@
 # Script: scaffold.sh
 # Description: Generates a new Java project from an existing local or remote template.
 # Author: Gemini
-# Version: 1.1.0
+# Version: 1.2.0
 # Usage: ./scaffold.sh [OPTIONS]
 
 set -euo pipefail # Exit on error, undefined vars, pipe failures
@@ -12,7 +12,7 @@ IFS=$'\n\t'      # Set secure Internal Field Separator
 # --- Script Configuration ---
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly SCRIPT_VERSION="1.1.0"
+readonly SCRIPT_VERSION="1.2.0"
 readonly TEMP_DIR=$(mktemp -d)
 
 # --- Default Values ---
@@ -74,6 +74,7 @@ Description:
 Options:
     -h, --help                  Show this help message and exit
     -v, --version               Show version information and exit
+    --deps                      Show the list of required CLI tool dependencies and exit
     -d, --debug                 Enable debug mode
     -V, --verbose               Enable verbose output
     -f, --force                 Force operation without confirmation (e.g., overwrite)
@@ -121,6 +122,7 @@ trap 'error "Script interrupted by user"; exit 130' INT TERM
 check_dependencies() {
     local deps=("$@")
     local missing=()
+    log "Check $deps"
     for dep in "${deps[@]}"; do
         if ! command -v "$dep" >/dev/null 2>&1; then
             missing+=("$dep")
@@ -148,7 +150,7 @@ check_directory() {
 
 # --- Core Logic ---
 
-# Parses the scaffold.ini file and exports the variables
+# Parses the scaffold.ini file using a robust grep/cut method
 parse_ini_file() {
     local ini_file="$1"
     verbose "Parsing configuration from $ini_file"
@@ -157,27 +159,38 @@ parse_ini_file() {
         return
     fi
 
-    # Read and process the INI file
-    while IFS='=' read -r key value; do
-        # Trim whitespace from key and value
-        key=$(echo "$key" | xargs)
-        value=$(echo "$value" | xargs)
-        log "${key}:${value}"
+    # Function to extract a value for a given key from the INI file.
+    # It handles spaces around '=' and trims whitespace from the value.
+    get_ini_value() {
+        local key_to_find="$1"
+        local found_value
+        # Grep for the key at the start of the line, get everything after the first '=', and trim whitespace.
+        found_value=$(grep -E "^[[:space:]]*${key_to_find}[[:space:]]*=" "$ini_file" | head -n 1 | cut -d'=' -f2- | xargs)
+        echo "$found_value"
+    }
 
-        # Skip comments and empty lines
-        if [[ -z "$key" || "$key" == \#* ]]; then
-            continue
-        fi
-        
-        # Assign to global variables if they are not already set by command-line args
-        case "$key" in
-            ID)          [[ -z "$ARTIFACT_ID" ]] && ARTIFACT_ID="$value" ;;
-            GROUP_ID)    [[ -z "$GROUP_ID" ]] && GROUP_ID="$value" ;;
-            DESCRIPTION) [[ -z "$DESCRIPTION" ]] && DESCRIPTION="$value" ;;
-            AUTHOR)      [[ -z "$AUTHOR" ]] && AUTHOR="$value" ;;
-        esac
-    done < "$ini_file"
+    # Assign to global variables only if they haven't been set by command-line args.
+    if [[ -z "$ARTIFACT_ID" ]]; then
+        ARTIFACT_ID=$(get_ini_value "ID")
+    fi
+    if [[ -z "$GROUP_ID" ]]; then
+        GROUP_ID=$(get_ini_value "GROUP_ID")
+    fi
+    
+    # These are not settable from the CLI, so always take from file if a value exists.
+    local desc_from_file
+    desc_from_file=$(get_ini_value "DESCRIPTION")
+    if [[ -n "$desc_from_file" ]]; then
+        DESCRIPTION="$desc_from_file"
+    fi
+
+    local author_from_file
+    author_from_file=$(get_ini_value "AUTHOR")
+    if [[ -n "$author_from_file" ]]; then
+        AUTHOR="$author_from_file"
+    fi
 }
+
 
 # Replaces placeholders and creates Java package structure
 replace_placeholders_and_structure() {
@@ -186,29 +199,33 @@ replace_placeholders_and_structure() {
 
     # --- Step 1: Create Java package structure ---
     local group_id_path="${GROUP_ID//./\/}" # com.vng.example -> com/vng/example
-    local artifact_id_path="${ARTIFACT_ID//-/_}" # spring-boot-demo -> spring_boot_demo
+    local artifact_id_path="${ARTIFACT_ID//-/}" # spring-boot-demo -> springbootdemo
     local full_package_path="$group_id_path/$artifact_id_path"
     
     local java_roots=("src/main/java" "src/test/java")
     for root in "${java_roots[@]}"; do
         local source_root="$target_dir/$root"
-        if [[ -d "$source_root" ]]; then
-            verbose "Found Java source root: $source_root"
-            local dest_package_dir="$source_root/$full_package_path"
-            
-            # Create the full package directory structure
-            mkdir -p "$dest_package_dir"
-            verbose "Created package structure: $dest_package_dir"
-            
-            # Move all files from the root into the new package structure
-            # Use find to handle cases with no files gracefully
-            find "$source_root" -maxdepth 1 -mindepth 1 -not -path "$source_root/$group_id_path*" -exec mv -t "$dest_package_dir" {} +
-            
-            # Clean up the com/ directory if it was created by the move
-            if [ -d "$source_root/com" ]; then
-                rm -rf "$source_root/com"
-            fi
+        # mkdir -p "$source_root"
+        # if [[ -d "$source_root" ]]; then
+
+        # fi
+
+        verbose "Found Java source root: $source_root"
+        local dest_package_dir="$source_root/$full_package_path"
+        
+        # Create the full package directory structure
+        mkdir -p "$dest_package_dir"
+        verbose "Created package structure: $dest_package_dir"
+        
+        # Move all files from the root into the new package structure
+        # Use find to handle cases with no files gracefully
+        # find "$source_root" -maxdepth 1 -mindepth 1 -not -path "$source_root/$group_id_path*" -exec mv -t "$dest_package_dir" {} +
+        
+        # Clean up the com/ directory if it was created by the move
+        if [ -d "$source_root/com" ]; then
+            rm -rf "$source_root/com"
         fi
+
     done
 
     # --- Step 2: Rename files containing placeholders ---
@@ -233,6 +250,15 @@ replace_placeholders_and_structure() {
     log "Placeholder replacement and structuring complete."
 }
 
+# --- Utility Functions ---
+print_dependencies() {
+    echo "Required dependencies for $SCRIPT_NAME:"
+    echo "  - rsync: For copying local templates."
+    echo "  - git:   For cloning remote templates."
+    echo ""
+    echo "The script also uses common core utilities like: sed, grep, find, cut, xargs, mkdir, mv, rm."
+}
+
 
 # --- Argument Parsing and Validation ---
 parse_args() {
@@ -241,6 +267,7 @@ parse_args() {
             -h|--help) usage; exit 0 ;;
             -v|--version) version; exit 0 ;;
             -d|--debug) DEBUG=true; shift ;;
+            --deps) print_dependencies; exit 0 ;;
             -V|--verbose) VERBOSE=true; shift ;;
             -f|--force) FORCE=true; shift ;;
             -p|--path) TEMPLATE_PATH="$2"; shift 2 ;;
@@ -286,6 +313,20 @@ validate_args() {
     OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)" # Get absolute path
 }
 
+# Prompts the user for a required value until it's provided.
+prompt_for_input() {
+    local prompt_message="$1"
+    local -n var_to_set="$2" # Use a nameref to set the variable in the parent scope
+
+    while [[ -z "${var_to_set}" ]]; do
+        echo -e -n "${YELLOW}${prompt_message}:${NC} " >&2
+        read -r var_to_set
+        if [[ -z "${var_to_set}" ]]; then
+            warn "This value cannot be empty."
+        fi
+    done
+}
+
 # --- Main Function ---
 main() {
     parse_args "$@"
@@ -309,6 +350,7 @@ main() {
     local source_template_dir="$TEMP_DIR/source"
     mkdir -p "$source_template_dir"
 
+    check_dependencies "rsync"
     if [[ -n "$GIT_REPO" ]]; then
         check_dependencies "git"
         log "Cloning template from $GIT_REPO..."
@@ -319,12 +361,14 @@ main() {
     else
         log "Copying local template from $TEMPLATE_PATH..."
         # Use rsync to copy contents, including hidden files
-        rsync -a --exclude='.git' "$TEMPLATE_PATH/" "$source_template_dir/"
+        rsync -a --exclude '.git' --exclude '.gradle' --exclude '.env' "$TEMPLATE_PATH/" "$source_template_dir/"
     fi
 
-    debug "Parsing file..."
     # --- Step 2: Parse Configuration ---
     parse_ini_file "$source_template_dir/scaffold.ini"
+
+    prompt_for_input "Enter the project's Group ID (e.g., com.example.app)" GROUP_ID
+    prompt_for_input "Enter the project's Artifact ID (e.g., my-app)" ARTIFACT_ID
 
     # Validate that required IDs are set
     if [[ -z "$GROUP_ID" ]]; then
@@ -349,6 +393,9 @@ main() {
     # --- Step 4: Process Placeholders and Create Structure ---
     log "Processing template..."
     replace_placeholders_and_structure "$OUTPUT_DIR"
+
+    log "Cleanup scaffold.ini"
+    rm "$OUTPUT_DIR/scaffold.ini"
 
     log "✅ Project '$ARTIFACT_ID' successfully generated in: $OUTPUT_DIR"
 }
