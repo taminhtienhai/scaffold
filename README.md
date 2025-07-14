@@ -7,7 +7,7 @@ A command-line tool for generating new Java projects from predefined templates. 
 You can install the `scaffold` tool with a single command. This does not require `sudo`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/taminhtienhai/scaffold/main/install.sh | sh -s -- -i
+curl -fsSL https://raw.githubusercontent.com/taminhtienhai/scaffold/main/install.sh | sh
 ```
 
 This will download and install the script to `$HOME/.local/bin/scaffold`.
@@ -51,6 +51,16 @@ scaffold --deps
     ```bash
     chmod +x scaffold
     ```
+
+## Uninstall
+
+To remove the `scaffold` tool from your system, you can run the `uninstall.sh` script from the project's directory:
+
+```bash
+./uninstall.sh
+```
+
+This will remove the executable from `$HOME/.local/bin/scaffold`.
 
 ## Usage
 

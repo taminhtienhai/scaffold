@@ -85,11 +85,4 @@ do_install() {
 }
 
 # --- Main Logic ---
-# The script is designed to be run with `-i` to trigger the installation.
-if [ "$1" = "-i" ]; then
-    do_install
-else
-    echo "This is an installer script for the '$EXECUTABLE_NAME' tool."
-    echo "Please run it like this:"
-    echo "  curl -fsSL <URL> | sh -s -- -i"
-fi
+do_install
