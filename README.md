@@ -4,13 +4,15 @@ A command-line tool for generating new Java projects from predefined templates. 
 
 ## Quick Install
 
-You can install the `scaffold` tool with a single command:
+You can install the `scaffold` tool with a single command. This does not require `sudo`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/haitmt/scaffold/main/install.sh | sudo sh -s -- -i
+curl -fsSL https://raw.githubusercontent.com/taminhtienhai/scraffold/main/install.sh | sh -s -- -i
 ```
 
-This will download and install the script to `/usr/local/bin/scaffold`.
+This will download and install the script to `$HOME/.local/bin/scaffold`.
+
+The installer will notify you if you need to add this directory to your `PATH`.
 
 ## Features
 
