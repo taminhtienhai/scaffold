@@ -3,7 +3,7 @@ help: |
   A CLI tool that generates a new Java project from an existing template.
   It checks for a 'srcaffold.ini' file and creates the standard Java
   directory structure based on the groupId and artifactId.
-version: 1.2.0
+version: 0.1.0
 
 flags:
   - long: --deps
