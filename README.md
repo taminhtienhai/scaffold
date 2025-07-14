@@ -78,6 +78,11 @@ scaffold --path ~/templates/my-java-template --out ./my-new-project
 scaffold --git https://github.com/user/java-template.git --out ./my-new-project
 ```
 
+**Generate from a sub-directory in a remote Git template:**
+```bash
+scaffold --git https://github.com/user/java-templates.git --gitsubdir my-template --out ./my-new-project
+```
+
 **Override `scaffold.ini` values:**
 ```bash
 scaffold --path ~/templates/my-java-template --group-id com.mycompany --artifact-id my-app
@@ -94,6 +99,7 @@ scaffold --path ~/templates/my-java-template --group-id com.mycompany --artifact
 | `--force` | `-f` | | Force overwrite of an existing output directory. |
 | `--path` | `-p` | `path` | Path to the local template directory. |
 | `--git` | `-g` | `git_repo` | URL of the remote Git repository template. |
+| `--gitsubdir` | | `git_sub_directory` | Git sub directory from the root. |
 | `--group-id`| | `group_id` | The `groupId` for the Java project (e.g., `com.example.app`). |
 | `--artifact-id`| | `artifact_id`| The `artifactId` for the Java project (e.g., `my-app`). |
 | `--out` | `-o` | `dir` | The output directory for the generated project (default: `.`). |
