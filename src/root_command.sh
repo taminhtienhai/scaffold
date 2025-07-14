@@ -12,6 +12,7 @@ VERBOSE=${args[--verbose]:-}
 FORCE=${args[--force]:-}
 TEMPLATE_PATH=${args[--path]:-}
 GIT_REPO=${args[--git]:-}
+GIT_SUB_DIR=${args[--gitsubdir]:-}
 GROUP_ID=${args[--group-id]:-}
 ARTIFACT_ID=${args[--artifact-id]:-}
 OUTPUT_DIR=${args[--out]:-.}
@@ -60,6 +61,10 @@ main() {
         check_dependencies "git"
         log "Cloning template from $GIT_REPO..."
         git clone --depth 1 "$GIT_REPO" "$source_template_dir" || { error "Failed to clone repository: $GIT_REPO"; exit 1; }
+
+        if ! [[ -z "$GIT_SUB_DIR" ]]; then
+            source_template_dir="$source_template_dir/$GIT_SUB_DIR"
+        fi
     else
         log "Copying local template from $TEMPLATE_PATH..."
         rsync -a --exclude='.git' --exclude='.gradle' --exclude='.env' "$TEMPLATE_PATH/" "$source_template_dir/"

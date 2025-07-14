@@ -26,6 +26,7 @@ root_command() {
   FORCE=${args[--force]:-}
   TEMPLATE_PATH=${args[--path]:-}
   GIT_REPO=${args[--git]:-}
+  GIT_SUB_DIR=${args[--gitsubdir]:-}
   GROUP_ID=${args[--group-id]:-}
   ARTIFACT_ID=${args[--artifact-id]:-}
   OUTPUT_DIR=${args[--out]:-.}
@@ -74,6 +75,10 @@ root_command() {
           check_dependencies "git"
           log "Cloning template from $GIT_REPO..."
           git clone --depth 1 "$GIT_REPO" "$source_template_dir" || { error "Failed to clone repository: $GIT_REPO"; exit 1; }
+
+          if ! [[ -z "$GIT_SUB_DIR" ]]; then
+              source_template_dir="$source_template_dir/$GIT_SUB_DIR"
+          fi
       else
           log "Copying local template from $TEMPLATE_PATH..."
           rsync -a --exclude='.git' --exclude='.gradle' --exclude='.env' "$TEMPLATE_PATH/" "$source_template_dir/"
@@ -116,7 +121,7 @@ version_command() {
 scaffold_usage() {
   if [[ -n $long_usage ]]; then
     printf "scaffold\n\n"
-    printf "  A CLI tool that generates a new Java project from an existing template.\n  It checks for a 'scaffold.ini' file and creates the standard Java\n  directory structure based on the groupId and artifactId.\n\n"
+    printf "  A CLI tool that generates a new Java project from an existing template.\n  It checks for a 'srcaffold.ini' file and creates the standard Java\n  directory structure based on the groupId and artifactId.\n\n"
   else
     printf "scaffold - A CLI tool that generates a new Java project from an existing template.\n\n"
   fi
@@ -163,6 +168,11 @@ scaffold_usage() {
     echo
 
     # :flag.usage
+    printf "  %s\n" "--gitsubdir GIT_SUB_DIRECTORY"
+    printf "    Git sub directory from the root\n"
+    echo
+
+    # :flag.usage
     printf "  %s\n" "--group-id GROUP_ID"
     printf "    Java project's groupId (e.g., com.example.app)\n"
     echo
@@ -190,6 +200,7 @@ scaffold_usage() {
     printf "%s\n" "Examples:"
     printf "  scaffold --path ~/templates/java-template --out ./my-new-project\n"
     printf "  scaffold --git https://github.com/user/java-template.git --out\n  ./my-new-project\n"
+    printf "  scaffold --git https://github.com/user/java-template.git --gitsubdir\n  templates/java --out ./my-new-project\n"
     printf "  scaffold --path ~/templates/java-template --group-id com.mycompany\n  --artifact-id my-app\n"
     echo
 
@@ -635,6 +646,20 @@ parse_requirements() {
           shift
         else
           printf "%s\n" "--git requires an argument: --git, -g GIT_REPO" >&2
+          exit 1
+        fi
+        ;;
+
+      # :flag.case
+      --gitsubdir)
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+          args['--gitsubdir']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--gitsubdir requires an argument: --gitsubdir GIT_SUB_DIRECTORY" >&2
           exit 1
         fi
         ;;

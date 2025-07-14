@@ -11,13 +11,13 @@ set -e # Exit on first error
 
 # --- Configuration ---
 # The URL where the main scaffold.sh script is located.
-SOURCE_URL="https://raw.githubusercontent.com/taminhtienhai/scraffold/main/scaffold"
+SOURCE_URL="https://raw.githubusercontent.com/taminhtienhai/scaffold/main/scaffold"
 
 # The location to install the script.
 # We use $HOME/.local/bin as it's the standard for user-installed executables
 # and doesn't require sudo.
 INSTALL_DIR="$HOME/.local/bin"
-EXECUTABLE_NAME="scraffold"
+EXECUTABLE_NAME="scaffold"
 INSTALL_PATH="$INSTALL_DIR/$EXECUTABLE_NAME"
 
 # --- Functions ---

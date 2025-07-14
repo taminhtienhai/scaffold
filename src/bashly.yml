@@ -1,7 +1,7 @@
 name: scaffold
 help: |
   A CLI tool that generates a new Java project from an existing template.
-  It checks for a 'scaffold.ini' file and creates the standard Java
+  It checks for a 'srcaffold.ini' file and creates the standard Java
   directory structure based on the groupId and artifactId.
 version: 1.2.0
 
@@ -26,6 +26,9 @@ flags:
     short: -g
     arg: git_repo
     help: URL of the git repository to use as a template.
+  - long: --gitsubdir
+    arg: git_sub_directory
+    help: Git sub directory from the root
 
   - long: --group-id
     arg: group_id
@@ -43,4 +46,5 @@ flags:
 examples:
 - scaffold --path ~/templates/java-template --out ./my-new-project
 - scaffold --git https://github.com/user/java-template.git --out ./my-new-project
+- scaffold --git https://github.com/user/java-template.git --gitsubdir templates/java --out ./my-new-project
 - scaffold --path ~/templates/java-template --group-id com.mycompany --artifact-id my-app
